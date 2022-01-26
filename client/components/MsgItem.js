@@ -1,7 +1,7 @@
 import MsgInput from './MsgInput'
 
 const MsgItem = ({ id, userId, timestamp, text, onUpdate, isEditing, startEdit, onDelete }) => (
-    <li className="message__item">
+    <li className="messages__item">
         <h3>
             {userId}{' '}
             <sub>
