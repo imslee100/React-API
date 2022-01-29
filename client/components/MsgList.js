@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import MsgItem from './MsgItem'
 import MsgInput from './MsgInput'
 import fetcher from '../fetcher'
+import useInfiniteScroll from '../hooks/useInfiniteScroll'
 
 const UserIds = ['roy','jay']
 const getRandomUserId = () => UserIds[Math.round(Math.random())]
@@ -12,6 +13,9 @@ const MsgList = ({smsgs, users}) => {
     const userId = query.userId || query.userId || ''
     const [msgs, setMsgs] = useState([])
     const [editingId, setEditingId] = useState(null)
+    const [hasNext, setHasNext] = useState(true)
+    const fetchMoreEl = useRef(null)
+    const intersecting = useInfiniteScroll(fetchMoreEl)
 
     const onCreate = async text => {
         const newMsg = await fetcher('post','/messages', { text, userId })
@@ -47,12 +51,19 @@ const MsgList = ({smsgs, users}) => {
     const doneEdit = () => setEditingId(null)
 
     const getMessages = async() => {
-        const msgs = await fetcher('get','/messages')
-        setMsgs(msgs)
+        const newMsgs = await fetcher('get','/messages', { params: { cursor: msgs[msgs.length - 1]?.id || '' }})
+
+        if(newMsgs.length === 0) {
+            setHasNext(false)
+            return
+        }
+
+        setMsgs(msgs => [...msgs, ...newMsgs])
     }
+
     useEffect(() => {
-        getMessages()
-    }, [])
+        if(intersecting && hasNext) getMessages()
+    }, [intersecting])
 
     return (
     <>
@@ -64,12 +75,13 @@ const MsgList = ({smsgs, users}) => {
                 {...x} 
                 onUpdate={onUpdate} 
                 onDelete={() => onDelete(x.id)} 
-                isEditing={editingId === x.id} 
                 startEdit={() => setEditingId(x.id)} 
+                isEditing={editingId === x.id} 
                 myId={userId}
             />
         ))}
         </ul>
+        <div ref={fetchMoreEl} />
     </>
     )
 }

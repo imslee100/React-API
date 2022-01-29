@@ -9,9 +9,10 @@ const messagesRoute = [
     // GET MESSAGES
     method: 'get',
     route: '/messages',
-    handler: (req, res) => {
+    handler: ({query: { cursor = '' }}, res) => {
       const msgs = getMsgs()
-      res.send(msgs)
+      const fromIndex = msgs.findIndex(msg => msg.id === cursor) + 1
+      res.send(msgs.slice(fromIndex, fromIndex + 15))
     },
   },
   {
@@ -35,7 +36,7 @@ const messagesRoute = [
     route: '/messages',
     handler: ({ body }, res) => {
       try{
-        if(!body.userID) throw Error('no userId')
+        if(!body.userId) throw Error('no userId')
         const msgs = getMsgs()
         const newMsg = {
           id: v4(),
